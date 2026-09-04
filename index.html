@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17365D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Laser Quotes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Laser Engraving Quote Calculator</title>
+<style>
+:root{
+  --navy:#17365D; --blue:#244f7d; --light:#f5f7fb; --card:#ffffff;
+  --yellow:#fff2cc; --green:#e2f0d9; --text:#1f2937; --muted:#6b7280;
+  --border:#d9dee7;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--light);color:var(--text)}
+.app{max-width:640px;margin:0 auto;min-height:100vh;padding-bottom:24px}
+.header{background:var(--navy);color:#fff;padding:18px 16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.header h1{margin:0;font-size:20px}
+.header p{margin:5px 0 0;font-size:12px;opacity:.82}
+.section{padding:14px}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(23,54,93,.08);border:1px solid #edf0f5;margin-bottom:14px}
+.card h2{margin:0 0 14px;font-size:16px;color:var(--navy)}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:520px){.grid.two{grid-template-columns:1fr 1fr}}
+label{display:block;font-size:12px;font-weight:700;margin:0 0 6px;color:#374151}
+input,select{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:11px;font-size:16px;background:#fff;color:var(--text)}
+input:focus,select:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px rgba(36,79,125,.12)}
+.editable{background:var(--yellow)}
+.note{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+.hidden{display:none}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result{background:#f8fafc;border:1px solid #e8edf4;border-radius:12px;padding:11px}
+.result .k{font-size:11px;color:var(--muted);margin-bottom:5px}
+.result .v{font-size:17px;font-weight:700}
+.result.big{grid-column:1/-1;background:var(--green);border-color:#c7dfba;padding:15px}
+.result.big .v{font-size:27px;color:#1f4b23}
+.btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-secondary{background:#e9eef5;color:var(--navy)}
+.summary-line{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #eef1f5;font-size:13px}
+.summary-line:last-child{border-bottom:none}
+details{border:1px solid #e4e8ee;border-radius:12px;margin-bottom:10px;background:#fff;overflow:hidden}
+summary{padding:13px 14px;font-weight:700;color:var(--navy);cursor:pointer}
+.details-body{padding:0 14px 14px}
+.status{margin-top:10px;font-size:12px;text-align:center;color:#35623a;font-weight:700;min-height:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Laser Engraving Quote Calculator</h1>
+    <p>Mobile quote tool for online orders and live events</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <h2>Order Details</h2>
+
+      <div class="grid two">
+        <div>
+          <label>Customer Name</label>
+          <input id="customer" type="text" placeholder="Optional">
+        </div>
+        <div>
+          <label>Quantity</label>
+          <input id="qty" class="editable" type="number" min="1" step="1" value="1">
+        </div>
+
+        <div>
+          <label>Product</label>
+          <select id="product" onchange="changeProduct()">
+            <option value="tag">Tag / Plaque</option>
+            <option value="keychain">Keychain</option>
+            <option value="tumbler">Tumbler</option>
+            <option value="board">Cutting Board</option>
+            <option value="acrylic">Acrylic Item</option>
+            <option value="wood">Wood Item</option>
+            <option value="custom">Other / Custom Product</option>
+          </select>
+        </div>
+
+        <div id="customDescWrap" class="hidden">
+          <label>Custom Product Description</label>
+          <input id="customDesc" type="text" placeholder="e.g. Metal name plate">
+        </div>
+
+        <div>
+          <label>Material / Product Cost per Unit</label>
+          <input id="materialCost" class="editable" type="number" min="0" step="0.01" value="0.40">
+          <div class="note">Auto-fills from the saved product cost. You can also overwrite it for this quote.</div>
+        </div>
+
+        <div>
+          <label>Order Type</label>
+          <select id="orderType">
+            <option value="online">Online Order</option>
+            <option value="live">Live Event</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Design / Artwork</label>
+          <select id="artwork" onchange="changeArtwork()">
+            <option value="ready">Customer-ready file</option>
+            <option value="minor">Minor editing</option>
+            <option value="vector">Logo cleanup / vectorization</option>
+            <option value="customdesign">Custom design</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Design / Artwork Cost</label>
+          <input id="artCost" class="editable" type="number" min="0" step="0.01" value="0">
+        </div>
+
+        <div>
+          <label>Packaging Cost — Entire Order</label>
+          <input id="packaging" class="editable" type="number" min="0" step="0.01" value="0">
+        </div>
+
+        <div>
+          <label>Rush Order</label>
+          <select id="rush">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Target Profit Margin (%)</label>
+          <input id="margin" class="editable" type="number" min="0" max="95" step="1" value="40">
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" type="button" onclick="calculateQuote()">Calculate Quote</button>
+        <div id="status" class="status"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quote Result</h2>
+      <div class="results">
+        <div class="result"><div class="k">Material Cost</div><div class="v" id="rMaterial">$0.00</div></div>
+        <div class="result"><div class="k">Production Hours</div><div class="v" id="rHours">0.00 hr</div></div>
+        <div class="result"><div class="k">Owner Time Value</div><div class="v" id="rOwner">$0.00</div></div>
+        <div class="result"><div class="k">Machine Depreciation</div><div class="v" id="rMachine">$0.00</div></div>
+        <div class="result"><div class="k">Electricity</div><div class="v" id="rElec">$0.00</div></div>
+        <div class="result"><div class="k">Price / Unit</div><div class="v" id="rUnit">$0.00</div></div>
+        <div class="result big"><div class="k">FINAL QUOTE</div><div class="v" id="rFinal">$0.00</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Customer Quote Summary</h2>
+      <div class="summary-line"><span>Customer</span><strong id="sCustomer">—</strong></div>
+      <div class="summary-line"><span>Product</span><strong id="sProduct">Tag / Plaque</strong></div>
+      <div class="summary-line"><span>Quantity</span><strong id="sQty">1</strong></div>
+      <div class="summary-line"><span>Order Type</span><strong id="sType">Online Order</strong></div>
+      <div class="summary-line"><span>Design / Artwork</span><strong id="sArtwork">Customer-ready file</strong></div>
+      <div class="summary-line"><span>Price / Unit</span><strong id="sUnit">$0.00</strong></div>
+      <div class="summary-line"><span>Quote Total</span><strong id="sTotal">$0.00</strong></div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+
+      <details>
+        <summary>Business Settings</summary>
+        <div class="details-body">
+          <div class="grid two">
+            <div><label>Owner Labour Value ($/hr)</label><input id="labor" class="editable" type="number" step="0.01" value="25"></div>
+            <div><label>Machine Purchase Cost ($)</label><input id="machineCost" class="editable" type="number" step="0.01" value="2483.74"></div>
+            <div><label>Expected Machine Life (hr)</label><input id="machineLife" class="editable" type="number" step="1" value="4000"></div>
+            <div><label>Laser + Purifier Power (kW)</label><input id="power" class="editable" type="number" step="0.001" value="0.225"></div>
+            <div><label>Electricity Rate ($/kWh)</label><input id="elecRate" class="editable" type="number" step="0.01" value="0.13"></div>
+            <div><label>Online Time / Item (min)</label><input id="onlineTime" class="editable" type="number" step="0.1" value="2"></div>
+            <div><label>Live Event Time / Item (min)</label><input id="liveTime" class="editable" type="number" step="0.1" value="5"></div>
+            <div><label>Rush Surcharge (%)</label><input id="rushPct" class="editable" type="number" step="1" value="20"></div>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="saveBusinessSettings()" style="margin-top:12px">Save Business Settings</button>
+          <div id="businessSaveMessage" class="status"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Product Costs</summary>
+        <div class="details-body">
+          <div class="grid two">
+            <div><label>Tag / Plaque</label><input id="pc0" class="editable" type="number" step="0.01" value="0.40"></div>
+            <div><label>Keychain</label><input id="pc1" class="editable" type="number" step="0.01" value="2.00"></div>
+            <div><label>Tumbler</label><input id="pc2" class="editable" type="number" step="0.01" value="8.00"></div>
+            <div><label>Cutting Board</label><input id="pc3" class="editable" type="number" step="0.01" value="10.00"></div>
+            <div><label>Acrylic Item</label><input id="pc4" class="editable" type="number" step="0.01" value="3.00"></div>
+            <div><label>Wood Item</label><input id="pc5" class="editable" type="number" step="0.01" value="4.00"></div>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="saveProductCosts()" style="margin-top:12px">Save Product Costs</button>
+          <div id="productSaveMessage" class="status"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Artwork Costs</summary>
+        <div class="details-body">
+          <div class="grid two">
+            <div><label>Customer-ready file</label><input id="ac0" class="editable" type="number" step="0.01" value="0"></div>
+            <div><label>Minor editing</label><input id="ac1" class="editable" type="number" step="0.01" value="5"></div>
+            <div><label>Logo cleanup / vectorization</label><input id="ac2" class="editable" type="number" step="0.01" value="15"></div>
+            <div><label>Custom design</label><input id="ac3" class="editable" type="number" step="0.01" value="25"></div>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="saveArtworkCosts()" style="margin-top:12px">Save Artwork Costs</button>
+          <div id="artworkSaveMessage" class="status"></div>
+        </div>
+      </details>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e4e8ee">
+        <button class="btn btn-secondary" type="button" onclick="resetAllSettings()">Reset All Settings to Default</button>
+        <div id="resetMessage" class="status"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+var defaults = {
+  productCosts:{tag:0.40,keychain:2.00,tumbler:8.00,board:10.00,acrylic:3.00,wood:4.00,custom:0},
+  artworkCosts:{ready:0,minor:5,vector:15,customdesign:25},
+  business:{labor:25,machineCost:2483.74,machineLife:4000,power:0.225,elecRate:0.13,onlineTime:2,liveTime:5,rushPct:20}
+};
+
+var productCosts = {};
+var artworkCosts = {};
+var business = {};
+
+function id(x){ return document.getElementById(x); }
+function val(x){ var n=parseFloat(id(x).value); return isNaN(n)?0:n; }
+function money(n){ return "$" + (isFinite(n)?n:0).toFixed(2); }
+function copyObject(o){
+  var c={}, k;
+  for(k in o){ if(o.hasOwnProperty(k)){ c[k]=o[k]; } }
+  return c;
+}
+function saveLocal(key,obj){
+  try{ localStorage.setItem(key,JSON.stringify(obj)); }catch(e){}
+}
+function loadLocal(key,fallback){
+  try{
+    var raw=localStorage.getItem(key);
+    if(raw){ return JSON.parse(raw); }
+  }catch(e){}
+  return copyObject(fallback);
+}
+
+function loadSettings(){
+  productCosts=loadLocal("laser_product_costs",defaults.productCosts);
+  artworkCosts=loadLocal("laser_artwork_costs",defaults.artworkCosts);
+  business=loadLocal("laser_business_settings",defaults.business);
+
+  id("pc0").value=productCosts.tag;
+  id("pc1").value=productCosts.keychain;
+  id("pc2").value=productCosts.tumbler;
+  id("pc3").value=productCosts.board;
+  id("pc4").value=productCosts.acrylic;
+  id("pc5").value=productCosts.wood;
+
+  id("ac0").value=artworkCosts.ready;
+  id("ac1").value=artworkCosts.minor;
+  id("ac2").value=artworkCosts.vector;
+  id("ac3").value=artworkCosts.customdesign;
+
+  id("labor").value=business.labor;
+  id("machineCost").value=business.machineCost;
+  id("machineLife").value=business.machineLife;
+  id("power").value=business.power;
+  id("elecRate").value=business.elecRate;
+  id("onlineTime").value=business.onlineTime;
+  id("liveTime").value=business.liveTime;
+  id("rushPct").value=business.rushPct;
+}
+
+function changeProduct(){
+  var key=id("product").value;
+  id("materialCost").value=(productCosts[key]||0).toFixed(2);
+  id("customDescWrap").className=(key==="custom")?"":"hidden";
+  calculateQuote();
+}
+
+function changeArtwork(){
+  var key=id("artwork").value;
+  id("artCost").value=(artworkCosts[key]||0).toFixed(2);
+  calculateQuote();
+}
+
+function calculateQuote(){
+  try{
+    var qty=Math.floor(val("qty"));
+    if(qty<1){ qty=1; id("qty").value=1; }
+
+    var minutes=(id("orderType").value==="online")?business.onlineTime:business.liveTime;
+    var hours=qty*minutes/60;
+    var material=qty*val("materialCost");
+    var owner=hours*business.labor;
+
+    var machineRate=business.machineLife>0 ? business.machineCost/business.machineLife : 0;
+    var machine=hours*machineRate;
+
+    var electricity=0;
+    if(id("orderType").value==="online"){
+      electricity=hours*business.power*business.elecRate;
+    }
+
+    var totalCost=material+owner+machine+electricity+val("artCost")+val("packaging");
+
+    var margin=val("margin")/100;
+    if(margin<0){margin=0;}
+    if(margin>0.95){margin=0.95;}
+
+    var quote=totalCost/(1-margin);
+    if(id("rush").value==="yes"){
+      quote=quote*(1+business.rushPct/100);
+    }
+
+    var unit=quote/qty;
+
+    id("rMaterial").innerHTML=money(material);
+    id("rHours").innerHTML=hours.toFixed(2)+" hr";
+    id("rOwner").innerHTML=money(owner);
+    id("rMachine").innerHTML=money(machine);
+    id("rElec").innerHTML=money(electricity);
+    id("rUnit").innerHTML=money(unit);
+    id("rFinal").innerHTML=money(quote);
+
+    id("sCustomer").innerHTML=id("customer").value || "—";
+    id("sProduct").innerHTML=(id("product").value==="custom") ? (id("customDesc").value || "Custom Product") : id("product").options[id("product").selectedIndex].text;
+    id("sQty").innerHTML=qty;
+    id("sType").innerHTML=id("orderType").options[id("orderType").selectedIndex].text;
+    id("sArtwork").innerHTML=id("artwork").options[id("artwork").selectedIndex].text;
+    id("sUnit").innerHTML=money(unit);
+    id("sTotal").innerHTML=money(quote);
+
+    id("status").innerHTML="Quote calculated successfully.";
+  }catch(e){
+    id("status").innerHTML="Calculation error. Please check the entered values.";
+  }
+}
+
+function saveProductCosts(){
+  productCosts.tag=val("pc0");
+  productCosts.keychain=val("pc1");
+  productCosts.tumbler=val("pc2");
+  productCosts.board=val("pc3");
+  productCosts.acrylic=val("pc4");
+  productCosts.wood=val("pc5");
+  productCosts.custom=0;
+
+  saveLocal("laser_product_costs",productCosts);
+  changeProduct();
+  id("productSaveMessage").innerHTML="Product costs saved.";
+}
+
+function saveArtworkCosts(){
+  artworkCosts.ready=val("ac0");
+  artworkCosts.minor=val("ac1");
+  artworkCosts.vector=val("ac2");
+  artworkCosts.customdesign=val("ac3");
+
+  saveLocal("laser_artwork_costs",artworkCosts);
+  changeArtwork();
+  id("artworkSaveMessage").innerHTML="Artwork costs saved.";
+}
+
+function saveBusinessSettings(){
+  business.labor=val("labor");
+  business.machineCost=val("machineCost");
+  business.machineLife=val("machineLife");
+  business.power=val("power");
+  business.elecRate=val("elecRate");
+  business.onlineTime=val("onlineTime");
+  business.liveTime=val("liveTime");
+  business.rushPct=val("rushPct");
+
+  saveLocal("laser_business_settings",business);
+  calculateQuote();
+  id("businessSaveMessage").innerHTML="Business settings saved.";
+}
+
+
+function resetAllSettings(){
+  var ok = window.confirm("Reset all Business Settings, Product Costs and Artwork Costs back to the original defaults?");
+  if(!ok){ return; }
+
+  productCosts=copyObject(defaults.productCosts);
+  artworkCosts=copyObject(defaults.artworkCosts);
+  business=copyObject(defaults.business);
+
+  try{
+    localStorage.removeItem("laser_product_costs");
+    localStorage.removeItem("laser_artwork_costs");
+    localStorage.removeItem("laser_business_settings");
+  }catch(e){}
+
+  id("pc0").value=defaults.productCosts.tag.toFixed(2);
+  id("pc1").value=defaults.productCosts.keychain.toFixed(2);
+  id("pc2").value=defaults.productCosts.tumbler.toFixed(2);
+  id("pc3").value=defaults.productCosts.board.toFixed(2);
+  id("pc4").value=defaults.productCosts.acrylic.toFixed(2);
+  id("pc5").value=defaults.productCosts.wood.toFixed(2);
+
+  id("ac0").value=defaults.artworkCosts.ready.toFixed(2);
+  id("ac1").value=defaults.artworkCosts.minor.toFixed(2);
+  id("ac2").value=defaults.artworkCosts.vector.toFixed(2);
+  id("ac3").value=defaults.artworkCosts.customdesign.toFixed(2);
+
+  id("labor").value=defaults.business.labor;
+  id("machineCost").value=defaults.business.machineCost;
+  id("machineLife").value=defaults.business.machineLife;
+  id("power").value=defaults.business.power;
+  id("elecRate").value=defaults.business.elecRate;
+  id("onlineTime").value=defaults.business.onlineTime;
+  id("liveTime").value=defaults.business.liveTime;
+  id("rushPct").value=defaults.business.rushPct;
+
+  changeProduct();
+  changeArtwork();
+  calculateQuote();
+
+  id("productSaveMessage").innerHTML="";
+  id("artworkSaveMessage").innerHTML="";
+  id("businessSaveMessage").innerHTML="";
+  id("resetMessage").innerHTML="All settings restored to default.";
+}
+
+window.onload=function(){
+  loadSettings();
+  changeProduct();
+  changeArtwork();
+  calculateQuote();
+};
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
